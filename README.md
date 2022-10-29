@@ -1,24 +1,49 @@
 # Project Title
 
+Peaksum 서버 보일러 플레이트 (nestjs, postgresql)
+
 ## About The Project
 
-Here's a blank template to get started: To avoid retyping too much info. Do a search and replace with your text editor for the following:
+- 유저인증 (JWT)
+- 유저 회원가입(이메일, 비밀번호)
+- 기본 서버 보일러플레이트
+- Contact (작성예시)
+- domain : 도메인 설계
+- infrastructure : domain과 usecases를 실제 프레임워크, 라이브러리를 사용한 서버로직 구현부
+- usecases : 도메인 설계를 바탕으로한 각 usecase 명세
 
 ### Built With
 
+- nestjs(express)
+- typescript
+- typeorm
+- postgresql
+- passport(인증)
+- swagger
+- bcrypt(암호화)
+- firebase-admin
+- swagger
+
 ## Getting Started
 
-This is an example of how you may give instructions on setting up your project locally.
-To get a local copy up and running follow these simple example steps.
+- /env/local.env - env 환경변수
 
-### Prerequisites
+```
+DATABASE_HOST=
+DATABASE_PORT=
+DATABASE_USER=
+DATABASE_PASSWORD=
+DATABASE_NAME=
+DATABASE_SCHEMA=
+DATABASE_SYNCHRONIZE=
 
-This is an example of how to list things you need to use the software and how to install them.
+JWT_SECRET=
+JWT_EXPIRATION_TIME=
+JWT_REFRESH_TOKEN_SECRET=
+JWT_REFRESH_TOKEN_EXPIRATION_TIME=
+```
 
-- npm
-  ```sh
-  npm install npm@latest -g
-  ```
+- ecosystem.config.js - pm2 실행전략
 
 ### Installation
 
@@ -30,7 +55,3 @@ This is an example of how to list things you need to use the software and how to
    ```sh
    npm install
    ```
-
-## Usage
-
-Use this space to show useful examples of how a project can be used. Additional screenshots, code examples and demos work well in this space. You may also link to more resources.

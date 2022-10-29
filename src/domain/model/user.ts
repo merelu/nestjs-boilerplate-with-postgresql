@@ -1,5 +1,5 @@
 export class UserWithoutPassword {
-  id: string;
+  id: number;
   email: string;
   refresh_token_hash: string;
   device_token: string;

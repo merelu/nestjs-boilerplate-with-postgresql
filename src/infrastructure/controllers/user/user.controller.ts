@@ -8,7 +8,16 @@ import {
 import { ApiResponseType } from '@infrastructure/common/swagger/response.decorator';
 import { UseCasesProxyModule } from '@infrastructure/usercases-proxy/usecases-proxy.module';
 import { UseCaseProxy } from '@infrastructure/usercases-proxy/usercases-proxy';
-import { Body, Controller, Get, Inject, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiExtraModels,
   ApiOperation,
@@ -36,6 +45,7 @@ export class UserController {
   @ApiOperation({ description: '회원 가입' })
   @ApiResponseType(UserPresenter, BaseMetaResponseFormat)
   async signup(@Body() signupDto: SignupDto): Promise<ResponseFormat> {
+    console.log(signupDto);
     const { email, password, device_token } = signupDto;
     const userCreated = await this.signupUseCaseProxy
       .getInstance()
@@ -52,11 +62,11 @@ export class UserController {
     return { data: new UserPresenter(user), meta: null };
   }
 
-  @Get(':user_id')
+  @Get('')
   @AuthJwt()
   @ApiOperation({ description: '유저 정보 호출(by id)' })
   @ApiResponseType(UserPresenter, BaseMetaResponseFormat)
-  async getUserById(@Param('user_id') id: string) {
+  async getUserById(@Query('id', ParseIntPipe) id: number) {
     const result = await this.getUserUseCaseProxy.getInstance().execute(id);
 
     return { data: new UserPresenter(result), meta: null };

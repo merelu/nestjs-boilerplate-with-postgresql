@@ -15,5 +15,5 @@ export class SignupDto {
   @ApiProperty({ required: false })
   @IsOptional()
   @IsString()
-  readonly device_token: string;
+  readonly device_token?: string;
 }

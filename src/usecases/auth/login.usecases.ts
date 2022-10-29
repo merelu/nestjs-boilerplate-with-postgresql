@@ -19,12 +19,12 @@ export class LoginUseCases {
     private readonly UuidService: IUuidService,
   ) {}
 
-  getJwtTokenAndCookie(userId: string) {
+  getJwtTokenAndCookie(userId: number) {
     this.logger.log(
       'LoginUseCases execute',
       `The user ${userId} have been logged(access_token).`,
     );
-    const payload: IJwtServicePayload = { userId: userId };
+    const payload: IJwtServicePayload = { id: userId };
     const secret = this.jwtConfig.getJwtSecret();
     const expiresIn = this.jwtConfig.getJwtExpirationTime() + 's';
     const token = this.jwtTokenService.createToken(payload, secret, expiresIn);
@@ -35,14 +35,14 @@ export class LoginUseCases {
     };
   }
 
-  async getJwtRefreshTokenAndCookie(userId: string) {
+  async getJwtRefreshTokenAndCookie(userId: number) {
     this.logger.log(
       'LoginUseCases execute',
       `The user ${userId} have been logged(refresh_token).`,
     );
     const uuid = this.UuidService.uuid();
     const payload: IJwtServicePayload = {
-      userId: userId,
+      id: userId,
       hash: uuid,
     };
 
@@ -74,7 +74,7 @@ export class LoginUseCases {
     return null;
   }
 
-  async validateUserForJWTStrategy(userId: string) {
+  async validateUserForJWTStrategy(userId: number) {
     const user = await this.userRepository.getUserById(userId);
     if (!user) {
       return null;
@@ -82,16 +82,16 @@ export class LoginUseCases {
     return user;
   }
 
-  async updateLoginTime(userId: string) {
+  async updateLoginTime(userId: number) {
     await this.userRepository.updateLastLogin(userId);
   }
 
-  async setCurrentRefreshTokenHash(key: string, userId: string) {
+  async setCurrentRefreshTokenHash(key: string, userId: number) {
     const hashedKey = await this.bcryptService.hash(key);
     await this.userRepository.updateRefreshTokenHash(userId, hashedKey);
   }
 
-  async getUserIfRefreshTokenMatches(refreshTokenHash: string, userId: string) {
+  async getUserIfRefreshTokenMatches(refreshTokenHash: string, userId: number) {
     const user = await this.userRepository.getUserById(userId);
     if (!user) {
       return null;

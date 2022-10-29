@@ -1,31 +1,27 @@
 import { ContactM } from '@domain/model/contact';
 import { ContactRepository } from '@domain/repositories/contact.repository.interface';
-import {
-  Contact,
-  ContactDocument,
-} from '@infrastructure/entities/contact.entity';
+import { Contact } from '@infrastructure/entities/contact.entity';
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class DatabaseContactRepository implements ContactRepository {
   constructor(
-    @InjectModel(Contact.name)
-    private readonly contactEntityRepository: Model<ContactDocument>,
+    @InjectRepository(Contact)
+    private readonly contactEntityRepository: Repository<Contact>,
   ) {}
   async insert(contact: ContactM): Promise<ContactM> {
     const contactEntity = this.toContactEntity(contact);
-    const result = await this.contactEntityRepository.create([contactEntity]);
-    return this.toContact(result[0]);
+    const result = await this.contactEntityRepository.insert(contactEntity);
+    return this.toContact(result.generatedMaps[0] as Contact);
   }
-  async findById(contactId: string): Promise<ContactM> {
-    const contactEntity = await this.contactEntityRepository.findById(
-      contactId,
-    );
-    if (!contactEntity) {
-      return null;
-    }
+
+  async findById(id: number): Promise<ContactM> {
+    const contactEntity = await this.contactEntityRepository.findOneOrFail({
+      where: { id },
+    });
+
     return this.toContact(contactEntity);
   }
 
@@ -34,9 +30,9 @@ export class DatabaseContactRepository implements ContactRepository {
     return contacts.map((contact) => this.toContact(contact));
   }
 
-  private toContact(contactEntity: ContactDocument): ContactM {
+  private toContact(contactEntity: Contact): ContactM {
     const contact: ContactM = new ContactM();
-    contact.id = contactEntity._id.toString();
+    contact.id = contactEntity.id;
 
     contact.name = contactEntity.name;
     contact.email = contactEntity.email;

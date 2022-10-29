@@ -2,6 +2,7 @@ import { EnvironmentEnum } from '@domain/common/enums/environment.enum';
 import { plainToInstance } from 'class-transformer';
 import { IsEnum, IsNumber, IsString, validateSync } from 'class-validator';
 
+//추후 환경변수에 대해 validate가 필요할 경우 작성
 class EnvironmentVariables {
   @IsEnum(EnvironmentEnum)
   NODE_ENV: EnvironmentEnum;

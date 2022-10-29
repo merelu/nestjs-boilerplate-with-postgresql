@@ -41,7 +41,7 @@ export class EnvironmentConfigService
   }
 
   getDatabasePort(): number {
-    throw new Error('Method not implemented.');
+    return this.configService.get<number>('DATABASE_PORT');
   }
 
   getDatabaseHost(): string {
@@ -58,5 +58,12 @@ export class EnvironmentConfigService
 
   getDatabaseName(): string {
     return this.configService.get<string>('DATABASE_NAME');
+  }
+
+  getDatabaseSchema(): string {
+    return this.configService.get<string>('DATABASE_SCHEMA');
+  }
+  getDatabaseSync(): boolean {
+    return this.configService.get<boolean>('DATABASE_SYNCHRONIZE');
   }
 }

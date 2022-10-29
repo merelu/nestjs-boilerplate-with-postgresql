@@ -7,106 +7,63 @@ import {
   ServicePlatformEnum,
   ServiceTypeEnum,
 } from '@domain/common/enums';
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { CustomSchemaOptions } from './custom.schema.option';
-
-export type ContactDocument = Contact & Document;
-
-@Schema(CustomSchemaOptions)
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+@Entity()
 export class Contact {
-  @Prop({
-    type: String,
-    required: true,
-  })
+  @PrimaryGeneratedColumn()
+  id: number;
+
+  @Column('varchar', { length: 50 })
   name: string;
 
-  @Prop({
-    type: String,
-    required: true,
-  })
+  @Column('varchar', { length: 50 })
   phone: string;
 
-  @Prop({
-    type: String,
-  })
+  @Column('varchar', { length: 50 })
   email: string;
 
-  @Prop({
-    type: String,
-    required: true,
-  })
+  @Column('varchar', { length: 50 })
   company: string;
 
-  @Prop({
-    type: String,
-    default: null,
-  })
+  @Column('text')
   etc: string;
 
-  @Prop({
-    type: Number,
-    enum: ServicePlatformEnum,
-    default: ServicePlatformEnum.TBD,
-  })
+  @Column({ type: 'enum', enum: ServicePlatformEnum })
   service_platform: ServicePlatformEnum;
 
-  @Prop({
-    type: Number,
-    enum: ServiceTypeEnum,
-    default: ServiceTypeEnum.TBD,
-  })
+  @Column({ type: 'enum', enum: ServiceTypeEnum })
   service_type: ServiceTypeEnum;
 
-  @Prop({
-    type: Number,
-    enum: ProjectScaleEnum,
-    default: ProjectScaleEnum.TBD,
-  })
+  @Column({ type: 'enum', enum: ProjectScaleEnum })
   project_scale: ProjectScaleEnum;
 
-  @Prop({
-    type: Number,
-    enum: DesignTypeEnum,
-    default: DesignTypeEnum.TBD,
-  })
+  @Column({ type: 'enum', enum: DesignTypeEnum })
   design_type: DesignTypeEnum;
 
-  @Prop({
-    type: Number,
-    enum: BudgetScaleEnum,
-    default: BudgetScaleEnum.TBD,
-  })
+  @Column({ type: 'enum', enum: BudgetScaleEnum })
   budget_scale: BudgetScaleEnum;
 
-  @Prop({
-    type: Number,
-    enum: DevelopPeriodEnum,
-    default: DevelopPeriodEnum.TBD,
-  })
+  @Column({ type: 'enum', enum: DevelopPeriodEnum })
   develop_period: DevelopPeriodEnum;
 
-  @Prop({
-    type: Number,
-    enum: ContactableTimeEnum,
-    default: ContactableTimeEnum.TBD,
-  })
+  @Column({ type: 'enum', enum: ContactableTimeEnum })
   contactable_time: ContactableTimeEnum;
 
-  @Prop({
-    type: Date,
-    default: null,
-  })
+  @Column()
   reservation_date: Date;
 
-  @Prop({
-    type: Boolean,
-    default: false,
-  })
+  @Column('boolean', { default: false })
   is_read: boolean;
 
-  readonly created_at: Date;
-  readonly updated_at: Date;
-}
+  @CreateDateColumn({ name: 'created_at' })
+  created_at: Date;
 
-export const ContactSchema = SchemaFactory.createForClass(Contact);
+  @UpdateDateColumn({ name: 'updated_at' })
+  updated_at: Date;
+}

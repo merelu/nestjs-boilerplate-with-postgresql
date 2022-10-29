@@ -38,7 +38,7 @@ export class JwtRefreshTokenStrategy extends PassportStrategy(
   async validate(payload: TokenPayload) {
     const user = await this.loginUsecaseProxy
       .getInstance()
-      .getUserIfRefreshTokenMatches(payload.hash, payload.userId);
+      .getUserIfRefreshTokenMatches(payload.hash, payload.id);
     if (!user) {
       this.logger.warn(
         'JwtRefreshTokenStrategy',

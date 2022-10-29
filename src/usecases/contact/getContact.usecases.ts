@@ -4,7 +4,7 @@ import { ContactRepository } from '@domain/repositories/contact.repository.inter
 export class GetContactUseCases {
   constructor(private readonly contactRepository: ContactRepository) {}
 
-  async execute(id: string): Promise<ContactM> {
+  async execute(id: number): Promise<ContactM> {
     return await this.contactRepository.findById(id);
   }
 }

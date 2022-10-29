@@ -1,34 +1,33 @@
 import { UserM } from '@domain/model/user';
 import { UserRepository } from '@domain/repositories/user.repository.interface';
-import { User, UserDocument } from '@infrastructure/entities/user.entity';
+import { User } from '@infrastructure/entities/user.entity';
 import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
 
 @Injectable()
 export class DatabaseUserRepository implements UserRepository {
   constructor(
-    @InjectModel(User.name)
-    private readonly userEntityRepository: Model<UserDocument>,
+    @InjectRepository(User)
+    private readonly userEntityRepository: Repository<User>,
   ) {}
 
   async insert(user: UserM): Promise<UserM> {
     const userEntity = this.toUserEntity(user);
-    const result = await this.userEntityRepository.create([userEntity]);
-    return this.toUser(result[0]);
+    const result = await this.userEntityRepository.insert(userEntity);
+    return this.toUser(result.generatedMaps[0] as User);
   }
 
-  async getUserById(userId: string): Promise<UserM> {
-    const userEntity = await this.userEntityRepository.findById(userId);
-    if (!userEntity) {
-      return null;
-    }
+  async getUserById(id: number): Promise<UserM> {
+    const userEntity = await this.userEntityRepository.findOneOrFail({
+      where: { id },
+    });
     return this.toUser(userEntity);
   }
 
   async getUserByEmail(email: string): Promise<UserM> {
     const userEntity = await this.userEntityRepository.findOne({
-      email: email,
+      where: { email },
     });
 
     if (!userEntity) {
@@ -37,32 +36,40 @@ export class DatabaseUserRepository implements UserRepository {
     return this.toUser(userEntity);
   }
 
-  async updateLastLogin(userId: string): Promise<void> {
-    await this.userEntityRepository.findByIdAndUpdate(userId, {
-      $set: { last_login: Date.now() },
-    });
+  async updateLastLogin(id: number): Promise<void> {
+    await this.userEntityRepository.update(
+      {
+        id,
+      },
+      { last_login: () => 'CURRENT_TIMESTAMP' },
+    );
   }
 
   async updateRefreshTokenHash(
-    userId: string,
+    id: number,
     refreshTokenHash: string,
   ): Promise<void> {
-    await this.userEntityRepository.findByIdAndUpdate(userId, {
-      $set: { refresh_token_hash: refreshTokenHash },
-    });
+    await this.userEntityRepository.update(
+      { id },
+      { refresh_token_hash: refreshTokenHash },
+    );
   }
 
-  async updateDeviceToken(userId: string, deviceToken: string): Promise<void> {
-    await this.userEntityRepository.findByIdAndUpdate(userId, {
-      $set: { device_token: deviceToken },
-    });
+  async updateDeviceToken(id: number, deviceToken: string): Promise<void> {
+    await this.userEntityRepository.update(
+      { id },
+      {
+        device_token: deviceToken,
+      },
+    );
   }
 
-  private toUser(userEntity: UserDocument): UserM {
+  private toUser(userEntity: User): UserM {
     const user = new UserM();
-    user.id = userEntity._id.toString();
+    user.id = userEntity.id;
     user.email = userEntity.email;
     user.password = userEntity.password;
+    user.device_token = userEntity.device_token;
     user.created_at = userEntity.created_at;
     user.updated_at = userEntity.updated_at;
     user.last_login = userEntity.last_login;
@@ -76,7 +83,7 @@ export class DatabaseUserRepository implements UserRepository {
 
     newUserEntity.email = user.email;
     newUserEntity.password = user.password;
-    newUserEntity.last_login = user.last_login;
+    newUserEntity.device_token = user.device_token;
 
     return newUserEntity;
   }

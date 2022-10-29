@@ -1,43 +1,35 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
-import { CustomSchemaOptions } from './custom.schema.option';
-
-export type UserDocument = User & Document;
-
-@Schema(CustomSchemaOptions)
+import {
+  Column,
+  CreateDateColumn,
+  Entity,
+  Index,
+  PrimaryGeneratedColumn,
+  UpdateDateColumn,
+} from 'typeorm';
+@Entity()
 export class User {
-  @Prop({
-    type: String,
-    required: true,
-    unique: true,
-  })
+  @PrimaryGeneratedColumn({ type: 'integer' })
+  id: number;
+
+  @Index({ unique: true })
+  @Column('varchar', { length: 50, unique: true })
   email: string;
 
-  @Prop({
-    type: String,
-    required: true,
-  })
+  @Column('text')
   password: string;
 
-  @Prop({
-    type: String,
-    default: null,
-  })
+  @Column('varchar', { nullable: true })
   device_token: string;
 
-  @Prop({
-    type: String,
-    default: null,
-  })
+  @Column('varchar', { nullable: true })
   refresh_token_hash: string;
 
-  @Prop({
-    type: Date,
-  })
+  @Column({ nullable: true })
   last_login: Date;
 
-  readonly created_at: Date;
-  readonly updated_at: Date;
-}
+  @CreateDateColumn({ name: 'created_at' })
+  created_at: Date;
 
-export const UserSchema = SchemaFactory.createForClass(User);
+  @UpdateDateColumn({ name: 'updated_at' })
+  updated_at: Date;
+}

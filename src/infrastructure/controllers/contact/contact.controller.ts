@@ -3,7 +3,16 @@ import { BaseMetaResponseFormat } from '@infrastructure/common/interceptors/resp
 import { ApiResponseType } from '@infrastructure/common/swagger/response.decorator';
 import { UseCasesProxyModule } from '@infrastructure/usercases-proxy/usecases-proxy.module';
 import { UseCaseProxy } from '@infrastructure/usercases-proxy/usercases-proxy';
-import { Body, Controller, Get, Inject, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Inject,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
 import {
   ApiExtraModels,
   ApiOperation,
@@ -41,11 +50,11 @@ export class ContactController {
     return { data: new ContactPresenter(contactCreated), meta: null };
   }
 
-  @Get(':contact_id')
+  @Get('')
   @AuthJwt()
   @ApiOperation({ description: 'Contact 정보 호출 (by id)' })
   @ApiResponseType(ContactPresenter, BaseMetaResponseFormat)
-  async getContactById(@Param('contact_id') id: string) {
+  async getContactById(@Query('id', ParseIntPipe) id: number) {
     const result = await this.getContactUseCaseProxy.getInstance().execute(id);
 
     return { data: new ContactPresenter(result), meta: null };

@@ -1,22 +1,13 @@
-import { MongooseConfigModule } from '@infrastructure/config/mongoose-config/mongoose-config.module';
-import {
-  Contact,
-  ContactSchema,
-} from '@infrastructure/entities/contact.entity';
-import { User, UserSchema } from '@infrastructure/entities/user.entity';
+import { TypeOrmConfigModule } from '@infrastructure/config/typeorm/typeorm.module';
+import { Contact } from '@infrastructure/entities/contact.entity';
+import { User } from '@infrastructure/entities/user.entity';
 import { Module } from '@nestjs/common';
-import { MongooseModule } from '@nestjs/mongoose';
+import { TypeOrmModule } from '@nestjs/typeorm';
 import { DatabaseContactRepository } from './contact.repository';
 import { DatabaseUserRepository } from './user.repository';
 
 @Module({
-  imports: [
-    MongooseConfigModule,
-    MongooseModule.forFeature([
-      { name: User.name, schema: UserSchema },
-      { name: Contact.name, schema: ContactSchema },
-    ]),
-  ],
+  imports: [TypeOrmConfigModule, TypeOrmModule.forFeature([User, Contact])],
   providers: [DatabaseUserRepository, DatabaseContactRepository],
   exports: [DatabaseUserRepository, DatabaseContactRepository],
 })

@@ -9,7 +9,7 @@ import {
 } from '@domain/common/enums';
 
 export class ContactM {
-  id: string;
+  id: number;
 
   service_platform: ServicePlatformEnum;
 
