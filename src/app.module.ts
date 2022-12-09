@@ -1,6 +1,4 @@
 import { EnvironmentConfigModule } from '@infrastructure/config/environment-config/environment-config.module';
-import { ExceptionsModule } from '@infrastructure/exceptions/exceptions.module';
-import { LoggerModule } from '@infrastructure/logger/logger.module';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { Module } from '@nestjs/common';
 import { join } from 'path';
@@ -8,11 +6,11 @@ import { BcryptServiceModule } from '@infrastructure/services/bcrypt/bcrypt.modu
 import { JwtServiceModule } from '@infrastructure/services/jwt/jwt.module';
 import { UseCasesProxyModule } from '@infrastructure/usercases-proxy/usecases-proxy.module';
 import { PassportModule } from '@nestjs/passport';
-import { LocalStrategy } from '@infrastructure/common/strategies/local.strategy';
 import { JwtStrategy } from '@infrastructure/common/strategies/jwt.strategy';
 import { JwtRefreshTokenStrategy } from '@infrastructure/common/strategies/jwt.refresh.strategy';
 import { ControllersModule } from '@infrastructure/controllers/controllers.module';
-import { FirebaseModule } from '@infrastructure/services/firebase/firebase.module';
+import { LoggerModule } from '@infrastructure/services/logger/logger.module';
+import { ExceptionsModule } from '@infrastructure/services/exceptions/exceptions.module';
 
 @Module({
   imports: [
@@ -28,8 +26,7 @@ import { FirebaseModule } from '@infrastructure/services/firebase/firebase.modul
     UseCasesProxyModule.register(),
     PassportModule,
     ControllersModule,
-    // FirebaseModule,
   ],
-  providers: [LocalStrategy, JwtStrategy, JwtRefreshTokenStrategy],
+  providers: [JwtStrategy, JwtRefreshTokenStrategy],
 })
 export class AppModule {}

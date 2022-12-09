@@ -1,13 +1,18 @@
+import { JwtSignOptions } from '@nestjs/jwt';
+
 export interface IJwtServicePayload {
-  id: number;
-  hash?: string;
+  sub: number;
+  email?: string;
+  name?: string;
 }
 
 export interface IJwtService {
-  checkToken(token: string): Promise<any>;
+  checkToken(token: string, secret?: string): Promise<IJwtServicePayload>;
   createToken(
     payload: IJwtServicePayload,
     secret: string,
     expiresIn: string,
   ): string;
+
+  createTokenByOption(option: JwtSignOptions): string;
 }

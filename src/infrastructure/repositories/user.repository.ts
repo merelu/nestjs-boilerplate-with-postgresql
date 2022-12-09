@@ -1,90 +1,133 @@
-import { UserM } from '@domain/model/user';
-import { UserRepository } from '@domain/repositories/user.repository.interface';
+import { OAuthTypeEnum } from '@domain/common/enums/user/oauth-type.enum';
+import { CreateUserModel, UserModel } from '@domain/model/database/user';
+import { IUserRepository } from '@domain/repositories/user.repository.interface';
 import { User } from '@infrastructure/entities/user.entity';
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, EntityManager } from 'typeorm';
 
 @Injectable()
-export class DatabaseUserRepository implements UserRepository {
+export class DatabaseUserRepository implements IUserRepository {
   constructor(
     @InjectRepository(User)
     private readonly userEntityRepository: Repository<User>,
   ) {}
 
-  async insert(user: UserM): Promise<UserM> {
-    const userEntity = this.toUserEntity(user);
-    const result = await this.userEntityRepository.insert(userEntity);
-    return this.toUser(result.generatedMaps[0] as User);
+  async create(
+    data: CreateUserModel,
+    conn?: EntityManager,
+  ): Promise<UserModel> {
+    const userEntity = this.toUserEntity(data);
+    if (conn) {
+      const result = await conn.getRepository(User).save(userEntity);
+      return this.toUser(result);
+    }
+
+    const result = await this.userEntityRepository.save(userEntity);
+    return this.toUser(result);
   }
 
-  async getUserById(id: number): Promise<UserM> {
-    const userEntity = await this.userEntityRepository.findOneOrFail({
+  async findUserById(
+    id: number,
+    conn?: EntityManager,
+  ): Promise<UserModel | null> {
+    if (conn) {
+      const result = await conn
+        .getRepository(User)
+        .findOneOrFail({ where: { id } });
+
+      return this.toUser(result);
+    }
+    const result = await this.userEntityRepository.findOne({
       where: { id },
     });
-    return this.toUser(userEntity);
-  }
-
-  async getUserByEmail(email: string): Promise<UserM> {
-    const userEntity = await this.userEntityRepository.findOne({
-      where: { email },
-    });
-
-    if (!userEntity) {
+    if (!result) {
       return null;
     }
-    return this.toUser(userEntity);
+    return this.toUser(result);
   }
 
-  async updateLastLogin(id: number): Promise<void> {
+  async findByIdUserProfile(id: number): Promise<UserModel | null> {
+    const result = await this.userEntityRepository.findOne({
+      where: { id },
+      relations: {
+        profile: true,
+      },
+    });
+
+    if (!result) {
+      return null;
+    }
+    return this.toUser(result);
+  }
+
+  async findUserByOAuthPayload(
+    provider: OAuthTypeEnum,
+    providerUserId: string,
+    conn?: EntityManager,
+  ): Promise<UserModel | null> {
+    if (conn) {
+      const result = await conn.getRepository(User).findOne({
+        where: { oauth_type: provider, oauth_user_id: providerUserId },
+      });
+      if (!result) return null;
+      return this.toUser(result);
+    }
+
+    const result = await this.userEntityRepository.findOne({
+      where: { oauth_type: provider, oauth_user_id: providerUserId },
+    });
+    if (!result) return null;
+
+    return this.toUser(result);
+  }
+
+  async updateLastLogin(id: number, conn?: EntityManager): Promise<void> {
+    if (conn) {
+      await conn
+        .getRepository(User)
+        .update({ id }, { last_login_at: () => 'CURRENT_TIMESTAMP' });
+    }
     await this.userEntityRepository.update(
       {
         id,
       },
-      { last_login: () => 'CURRENT_TIMESTAMP' },
+      { last_login_at: () => 'CURRENT_TIMESTAMP' },
     );
   }
 
-  async updateRefreshTokenHash(
-    id: number,
-    refreshTokenHash: string,
-  ): Promise<void> {
-    await this.userEntityRepository.update(
-      { id },
-      { refresh_token_hash: refreshTokenHash },
-    );
+  private toUser(userEntity: User): UserModel {
+    const result = new UserModel();
+    result.id = userEntity.id;
+    result.status = userEntity.status;
+
+    result.oauth_type = userEntity.oauth_type;
+    result.oauth_user_id = userEntity.oauth_user_id;
+
+    result.last_login_at = userEntity.last_login_at;
+
+    result.push_agree = userEntity.push_agree;
+
+    result.withdraw = userEntity.withdraw;
+    result.withdrew_at = userEntity.withdrew_at;
+
+    result.profile = userEntity.profile;
+    result.device = userEntity.device;
+
+    result.created_at = userEntity.created_at;
+    result.updated_at = userEntity.updated_at;
+
+    return result;
   }
 
-  async updateDeviceToken(id: number, deviceToken: string): Promise<void> {
-    await this.userEntityRepository.update(
-      { id },
-      {
-        device_token: deviceToken,
-      },
-    );
-  }
+  private toUserEntity(user: CreateUserModel): User {
+    const result: User = new User();
 
-  private toUser(userEntity: User): UserM {
-    const user = new UserM();
-    user.id = userEntity.id;
-    user.email = userEntity.email;
-    user.password = userEntity.password;
-    user.device_token = userEntity.device_token;
-    user.created_at = userEntity.created_at;
-    user.updated_at = userEntity.updated_at;
-    user.last_login = userEntity.last_login;
-    user.refresh_token_hash = userEntity.refresh_token_hash;
+    result.oauth_type = user.oauth_type;
+    result.oauth_user_id = user.oauth_user_id;
+    result.profile = user.profile;
+    result.device = user.device;
 
-    return user;
-  }
-
-  private toUserEntity(user: UserM): User {
-    const newUserEntity: User = new User();
-
-    newUserEntity.email = user.email;
-    newUserEntity.password = user.password;
-    newUserEntity.device_token = user.device_token;
-
-    return newUserEntity;
+    return result;
   }
 }

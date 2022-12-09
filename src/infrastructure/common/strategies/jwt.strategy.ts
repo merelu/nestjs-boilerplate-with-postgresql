@@ -1,7 +1,8 @@
-import { TokenPayload } from '@domain/model/auth';
+import { CommonErrorCodeEnum } from '@domain/common/enums/error-code.enum';
+import { TokenPayload } from '@domain/model/common/auth';
 import { EnvironmentConfigService } from '@infrastructure/config/environment-config/environment-config.service';
-import { ExceptionsService } from '@infrastructure/exceptions/exceptions.service';
-import { LoggerService } from '@infrastructure/logger/logger.service';
+import { ExceptionsService } from '@infrastructure/services/exceptions/exceptions.service';
+
 import { UseCasesProxyModule } from '@infrastructure/usercases-proxy/usecases-proxy.module';
 import { UseCaseProxy } from '@infrastructure/usercases-proxy/usercases-proxy';
 import { Inject, Injectable } from '@nestjs/common';
@@ -15,7 +16,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     @Inject(UseCasesProxyModule.LOGIN_USECASES_PROXY)
     private readonly loginUsecaseProxy: UseCaseProxy<LoginUseCases>,
-    private readonly logger: LoggerService,
     private readonly exceptionService: ExceptionsService,
     private readonly configService: EnvironmentConfigService,
   ) {
@@ -34,10 +34,12 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   async validate(payload: TokenPayload) {
     const user = this.loginUsecaseProxy
       .getInstance()
-      .validateUserForJWTStrategy(payload.id);
+      .validateUserForJWTStrategy(payload.sub);
     if (!user) {
-      this.logger.warn('JwtStrategy', `User not found`);
-      this.exceptionService.forbiddenException({ message: 'User not found' });
+      throw this.exceptionService.unauthorizedException({
+        error_code: CommonErrorCodeEnum.UNAUTHORIZED,
+        error_description: '유효 하지 않은 토큰입니다.',
+      });
     }
     return user;
   }

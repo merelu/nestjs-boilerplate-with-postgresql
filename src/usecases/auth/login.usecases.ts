@@ -3,109 +3,84 @@ import {
   IJwtService,
   IJwtServicePayload,
 } from '@domain/adapters/jwt.interface';
-import { IUuidService } from '@domain/adapters/uuid.interface';
+import { IRedisCacheService } from '@domain/adapters/redis-cache.interface';
 import { JwtConfig } from '@domain/config/jwt.interface';
-import { ILogger } from '@domain/logger/logger.interface';
-import { UserWithoutPassword } from '@domain/model/user';
-import { UserRepository } from '@domain/repositories/user.repository.interface';
+import { UserModel } from '@domain/model/database/user';
+import { IUserRepository } from '@domain/repositories/user.repository.interface';
 
 export class LoginUseCases {
   constructor(
-    private readonly logger: ILogger,
     private readonly jwtTokenService: IJwtService,
     private readonly jwtConfig: JwtConfig,
-    private readonly userRepository: UserRepository,
+    private readonly userRepository: IUserRepository,
+    private readonly redisCashService: IRedisCacheService,
     private readonly bcryptService: IBcryptService,
-    private readonly UuidService: IUuidService,
   ) {}
 
   getJwtTokenAndCookie(userId: number) {
-    this.logger.log(
-      'LoginUseCases execute',
-      `The user ${userId} have been logged(access_token).`,
-    );
-    const payload: IJwtServicePayload = { id: userId };
+    const payload: IJwtServicePayload = { sub: userId };
     const secret = this.jwtConfig.getJwtSecret();
     const expiresIn = this.jwtConfig.getJwtExpirationTime() + 's';
     const token = this.jwtTokenService.createToken(payload, secret, expiresIn);
 
     return {
       token,
-      cookie: `Authentication=${token}; HttpOnly; Path=/; Max-Age=${this.jwtConfig.getJwtExpirationTime()}`,
+      cookie: `Authentication=${token}; HttpOnly; Path=/; Max-Age=${this.jwtConfig.getJwtExpirationTime()}; SameSite=None; Secure`,
     };
   }
 
   async getJwtRefreshTokenAndCookie(userId: number) {
-    this.logger.log(
-      'LoginUseCases execute',
-      `The user ${userId} have been logged(refresh_token).`,
-    );
-    const uuid = this.UuidService.uuid();
-    const payload: IJwtServicePayload = {
-      id: userId,
-      hash: uuid,
-    };
-
+    const payload: IJwtServicePayload = { sub: userId };
     const secret = this.jwtConfig.getJwtRefreshSecret();
     const expiresIn = this.jwtConfig.getJwtRefreshExpirationTime() + 's';
     const token = this.jwtTokenService.createToken(payload, secret, expiresIn);
-    await this.setCurrentRefreshTokenHash(uuid, userId);
+    const tokenSigniture = token.split('.')[2];
+    await this.setCurrentRefreshTokenHash(tokenSigniture, userId);
 
     return {
       token,
-      cookie: `Refresh=${token}; HttpOnly; Path=/; Max-Age=${this.jwtConfig.getJwtRefreshExpirationTime()}`,
+      cookie: `Refresh=${token}; HttpOnly; Path=/; Max-Age=${this.jwtConfig.getJwtRefreshExpirationTime()}; SameSite=None; Secure`,
     };
   }
 
-  async validateUserForLocalStrategy(
-    email: string,
-    password: string,
-  ): Promise<UserWithoutPassword> {
-    const user = await this.userRepository.getUserByEmail(email);
-    if (!user) {
-      return null;
-    }
-    const match = await this.bcryptService.compare(password, user.password);
-    if (user && match) {
-      await this.updateLoginTime(user.id);
-      const { password, ...result } = user;
-      return result;
-    }
-    return null;
+  async validateJwtToken(
+    token: string,
+    secret?: string,
+  ): Promise<IJwtServicePayload> {
+    const decode = await this.jwtTokenService.checkToken(token, secret);
+    return decode;
   }
 
-  async validateUserForJWTStrategy(userId: number) {
-    const user = await this.userRepository.getUserById(userId);
-    if (!user) {
-      return null;
-    }
-    return user;
+  async validateUserForJWTStrategy(userId: number): Promise<UserModel | null> {
+    return await this.userRepository.findUserById(userId);
   }
 
   async updateLoginTime(userId: number) {
     await this.userRepository.updateLastLogin(userId);
   }
 
-  async setCurrentRefreshTokenHash(key: string, userId: number) {
-    const hashedKey = await this.bcryptService.hash(key);
-    await this.userRepository.updateRefreshTokenHash(userId, hashedKey);
+  async compareRefreshTokenHash(
+    userId: number,
+    signiture: string,
+  ): Promise<boolean> {
+    const matchedHash = await this.redisCashService.get('refresh' + userId);
+
+    if (!matchedHash) return false;
+
+    const isValid = await this.bcryptService.compare(signiture, matchedHash);
+
+    if (!isValid) {
+      return false;
+    }
+    return true;
   }
 
-  async getUserIfRefreshTokenMatches(refreshTokenHash: string, userId: number) {
-    const user = await this.userRepository.getUserById(userId);
-    if (!user) {
-      return null;
-    }
-
-    const isRefreshTokenMatching = await this.bcryptService.compare(
-      refreshTokenHash,
-      user.refresh_token_hash,
+  async setCurrentRefreshTokenHash(signiture: string, userId: number) {
+    const hashedKey = await this.bcryptService.hash(signiture);
+    await this.redisCashService.set(
+      'refresh' + userId,
+      hashedKey,
+      Number(this.jwtConfig.getJwtRefreshExpirationTime()),
     );
-
-    if (isRefreshTokenMatching) {
-      return user;
-    }
-
-    return null;
   }
 }

@@ -1,15 +1,10 @@
-import { UserRepository } from '@domain/repositories/user.repository.interface';
+import { IRedisCacheService } from '@domain/adapters/redis-cache.interface';
 
 export class LogoutUseCases {
-  constructor(private readonly userRepository: UserRepository) {}
+  constructor(private readonly redisCashService: IRedisCacheService) {}
 
   async execute(userId: number): Promise<string[]> {
-    const user = await this.userRepository.getUserById(userId);
-    if (!user) {
-      return null;
-    }
-    await this.userRepository.updateRefreshTokenHash(userId, null);
-    await this.userRepository.updateDeviceToken(userId, null);
+    await this.redisCashService.del('refresh' + userId);
 
     return [
       'Authentication=; HttpOnly; Path=/; Max-Age=0',

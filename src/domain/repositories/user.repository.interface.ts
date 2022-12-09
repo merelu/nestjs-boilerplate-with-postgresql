@@ -1,10 +1,14 @@
-import { UserM } from '@domain/model/user';
+import { OAuthTypeEnum } from '@domain/common/enums/user/oauth-type.enum';
+import { CreateUserModel, UserModel } from '@domain/model/database/user';
+import { EntityManager } from 'typeorm';
 
-export interface UserRepository {
-  insert(user: UserM): Promise<UserM>;
-  getUserById(id: number): Promise<UserM>;
-  getUserByEmail(email: string): Promise<UserM>;
-  updateLastLogin(id: number): Promise<void>;
-  updateDeviceToken(id: number, deviceToken: string): Promise<void>;
-  updateRefreshTokenHash(id: number, refreshToken: string): Promise<void>;
+export interface IUserRepository {
+  create(data: CreateUserModel, conn?: EntityManager): Promise<UserModel>;
+  findUserById(id: number, conn?: EntityManager): Promise<UserModel | null>;
+  findUserByOAuthPayload(
+    provider: OAuthTypeEnum,
+    providerUserId: string,
+    conn?: EntityManager,
+  ): Promise<UserModel | null>;
+  updateLastLogin(id: number, conn?: EntityManager): Promise<void>;
 }

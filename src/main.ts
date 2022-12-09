@@ -1,10 +1,6 @@
 import { AllExceptionFilter } from '@infrastructure/common/filter/exception.filter';
 import { LoggingInterceptor } from '@infrastructure/common/interceptors/logger.interceptor';
-import {
-  ResponseFormat,
-  ResponseInterceptor,
-} from '@infrastructure/common/interceptors/response.interceptor';
-import { LoggerService } from '@infrastructure/logger/logger.service';
+import { ResponseInterceptor } from '@infrastructure/common/interceptors/response.interceptor';
 import { ValidationPipe } from '@nestjs/common';
 import { NestFactory } from '@nestjs/core';
 import cookieParser from 'cookie-parser';
@@ -12,6 +8,8 @@ import { NestExpressApplication } from '@nestjs/platform-express';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import helmet from 'helmet';
 import { AppModule } from './app.module';
+import { LoggerService } from '@infrastructure/services/logger/logger.service';
+import { createValidationException } from '@infrastructure/utils/create-validation-exception';
 
 async function bootstrap() {
   const env = process.env.NODE_ENV;
@@ -30,7 +28,11 @@ async function bootstrap() {
   app.useGlobalFilters(new AllExceptionFilter(new LoggerService()));
 
   // pipes
-  app.useGlobalPipes(new ValidationPipe());
+  app.useGlobalPipes(
+    new ValidationPipe({
+      exceptionFactory: (errors) => createValidationException(errors),
+    }),
+  );
 
   // interceptors
   app.useGlobalInterceptors(new LoggingInterceptor(new LoggerService()));
@@ -49,7 +51,6 @@ async function bootstrap() {
       .setExternalDoc('스웨거 JSON', '/v1/doc-json')
       .build();
     const document = SwaggerModule.createDocument(app, config, {
-      extraModels: [ResponseFormat],
       deepScanRoutes: true,
     });
     SwaggerModule.setup('doc', app, document, {
@@ -59,6 +60,8 @@ async function bootstrap() {
       customfavIcon: '/static/favicon.ico',
       swaggerOptions: {
         persistAuthorization: true,
+        tagsSorter: 'alpha',
+        operationsSorter: 'method',
       },
     });
   }

@@ -1,4 +1,6 @@
-import { LoggerService } from '@infrastructure/logger/logger.service';
+import { CommonErrorCodeEnum } from '@domain/common/enums/error-code.enum';
+import { IFormatExceptionMessage } from '@domain/exceptions/exceptions.interface';
+import { LoggerService } from '@infrastructure/services/logger/logger.service';
 import {
   ArgumentsHost,
   Catch,
@@ -6,11 +8,6 @@ import {
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
-
-interface IError {
-  message: string;
-  error_code: string;
-}
 
 @Catch()
 export class AllExceptionFilter implements ExceptionFilter {
@@ -26,28 +23,23 @@ export class AllExceptionFilter implements ExceptionFilter {
         ? exception.getStatus()
         : HttpStatus.INTERNAL_SERVER_ERROR;
 
-    const message =
+    const result =
       exception instanceof HttpException
-        ? (exception.getResponse() as IError)
-        : { message: (exception as Error).message, error_code: null };
+        ? (exception.getResponse() as IFormatExceptionMessage)
+        : ({
+            error_description: (exception as Error).message,
+            error_text: '',
+            error_code: CommonErrorCodeEnum.INTERNAL_SERVER,
+          } as IFormatExceptionMessage);
 
-    const responseData = {
-      ...{
-        statusCode: status,
-        timestamp: new Date().toISOString(),
-        path: request.url,
-      },
-      ...message,
-    };
+    this.logMessage(request, result, status, exception);
 
-    this.logMessage(request, message, status, exception);
-
-    response.status(status).json(responseData);
+    response.status(status).json(result);
   }
 
   private logMessage(
     request: any,
-    message: IError,
+    result: IFormatExceptionMessage,
     status: number,
     exception: any,
   ) {
@@ -56,16 +48,16 @@ export class AllExceptionFilter implements ExceptionFilter {
         `End Request for ${request.path}`,
         `method=${request.method}
         status=${status} error_code=${
-          message.error_code ? message.error_code : null
-        } message=${message.message ? message.message : null}`,
+          result.error_code ? result.error_code : null
+        } message=${result.error_description}`,
         status >= 500 ? exception.stack : '',
       );
     } else {
       this.logger.warn(
         `End Request for ${request.path}`,
         `method=${request.method} status=${status} error_code=${
-          message.error_code ? message.error_code : null
-        } message=${message.message ? message.message : null}`,
+          result.error_code ? result.error_code : null
+        } message=${result.error_description}`,
       );
     }
   }

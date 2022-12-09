@@ -1,58 +1,33 @@
-import {
-  IBaseMetaResponseFormat,
-  IResponseFormat,
-} from '@domain/response/response.interface';
+import { ILogger } from '@domain/logger/logger.interface';
+import { BaseResponseFormat } from '@domain/response/base.response';
 import {
   CallHandler,
   ExecutionContext,
   Injectable,
-  LoggerService,
   NestInterceptor,
 } from '@nestjs/common';
-import { ApiProperty } from '@nestjs/swagger';
 import { map, Observable } from 'rxjs';
-
-export class ResponseFormat implements IResponseFormat {
-  meta: IBaseMetaResponseFormat;
-  data: Record<string, any>;
-}
-
-export class BaseMetaResponseFormat implements IBaseMetaResponseFormat {
-  // @ApiProperty()
-  // is_array?: boolean;
-  // @ApiProperty()
-  // path?: string;
-  // @ApiProperty()
-  // duration?: string;
-  // @ApiProperty()
-  // method?: string;
-}
 
 @Injectable()
 export class ResponseInterceptor implements NestInterceptor {
-  constructor(private readonly logger: LoggerService) {}
+  constructor(private readonly logger: ILogger) {}
   intercept(
     context: ExecutionContext,
-    next: CallHandler<ResponseFormat>,
-  ): Observable<ResponseFormat> {
+    next: CallHandler<BaseResponseFormat>,
+  ): Observable<BaseResponseFormat> {
     const now = Date.now();
     const httpContext = context.switchToHttp();
     const request = httpContext.getRequest();
 
     return next.handle().pipe(
-      map((result) => {
+      map((body) => {
         this.logger.debug(
-          'CONTEXT',
-          `is_array=${Array.isArray(result.data)} duration=${
-            Date.now() - now
-          }ms ${request.method} ${request.path}`,
+          'Response',
+          `is_array=${Array.isArray(body)} duration=${Date.now() - now}ms ${
+            request.method
+          } ${request.path} body=${JSON.stringify(body)}`,
         );
-        return {
-          data: result.data,
-          meta: {
-            ...result.meta,
-          },
-        };
+        return body;
       }),
     );
   }

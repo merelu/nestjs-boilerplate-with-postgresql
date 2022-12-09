@@ -1,18 +1,20 @@
 import { EnvironmentConfigModule } from '@infrastructure/config/environment-config/environment-config.module';
 import { EnvironmentConfigService } from '@infrastructure/config/environment-config/environment-config.service';
 import { Module } from '@nestjs/common';
-import { FirebaseService } from './firebase.service';
+import { LoggerModule } from '../logger/logger.module';
+import { LoggerService } from '../logger/logger.service';
+import { FirebaseFcmService } from './firebase-fcm.service';
 
 @Module({
-  imports: [EnvironmentConfigModule],
+  imports: [EnvironmentConfigModule, LoggerModule],
   providers: [
     {
       inject: [EnvironmentConfigService],
-      provide: FirebaseService,
-      useFactory: (config: EnvironmentConfigService) =>
-        new FirebaseService(config),
+      provide: FirebaseFcmService,
+      useFactory: (config: EnvironmentConfigService, logger: LoggerService) =>
+        new FirebaseFcmService(config, logger),
     },
   ],
-  exports: [FirebaseService],
+  exports: [FirebaseFcmService],
 })
 export class FirebaseModule {}
